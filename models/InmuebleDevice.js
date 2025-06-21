@@ -1,5 +1,5 @@
-const {DataTypes} = require('sequelize');
-const {sequelize} = require('../config/database');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 const InmuebleDevice = sequelize.define('inmueble_devices', {
     inmuebleId: {
         type: DataTypes.INTEGER,
@@ -11,11 +11,11 @@ const InmuebleDevice = sequelize.define('inmueble_devices', {
         }
     },
     deviceId: {
-        type: DataTypes.STRING,
+        type: DataTypes.INTEGER,
         allowNull: false,
         references: {
             model: 'devices', // Asegúrate de que este modelo exista
-            key: 'deviceId',
+            key: 'id',
             onDelete: 'CASCADE' // Elimina la relación si el dispositivo es eliminado
         }
     },
@@ -43,16 +43,21 @@ const InmuebleDevice = sequelize.define('inmueble_devices', {
         afterUpdate: async (relacion, options) => {
             // Si se actualizó el status, actualizar también el dispositivo
             if (relacion.changed('status')) {
-                const Device = require('./Device'); // Importar aquí para evitar dependencias circulares
+                const Device = require('./Device');
                 const device = await Device.findByPk(relacion.deviceId);
                 if (device) {
-                    const newStatus = ['abierta', 'encendida'].includes(relacion.status) ?
-                        'activo' : 'inactivo';
+                    // Adaptar el estado según el tipo de dispositivo
+                    let newStatus = 'inactivo';
+                    if ((device.type === 'chapa' && relacion.status === 'abierta') ||
+                        (device.type === 'luz' && relacion.status === 'encendida')) {
+                        newStatus = 'activo';
+                    }
                     await device.update({ status: newStatus }, { transaction: options.transaction });
                 }
             }
         }
-    }
+    },
+    freezeTableName: true // Evita que Sequelize pluralice el nombre de la tabla
 });
 
 module.exports = InmuebleDevice;

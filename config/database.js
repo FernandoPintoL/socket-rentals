@@ -30,10 +30,10 @@ const connectDB = async () => {
         
         // Sincronizar modelos con la base de datos
         // En producción, deberías usar migraciones en lugar de sync
-        if (process.env.NODE_ENV === 'development') {
+        /*if (process.env.NODE_ENV === 'development') {
             await sequelize.sync();
             console.log('Database synchronized');
-        }
+        }*/
     } catch (error) {
         console.error('Unable to connect to the database:', error);
         process.exit(1);

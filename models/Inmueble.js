@@ -51,7 +51,8 @@ const Inmueble = sequelize.define('inmuebles', {
     }, {
         tableName: 'inmuebles',
         timestamps: true,
-        underscored: true // Esto hará que los nombres de las columnas usen snake_case como Laravel
+        underscored: true, // Esto hará que los nombres de las columnas usen snake_case como Laravel
+        freezeTableName: true, // Evita que Sequelize pluralice el nombre de la tabla
     }
 );
 module.exports = Inmueble;

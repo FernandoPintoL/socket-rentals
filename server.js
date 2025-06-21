@@ -75,7 +75,7 @@ if (NODE_ENV === 'production') {
 // Endpoint para registro de dispositivos ESP32
 app.post('/register-device', async (req, res) => {
     try {
-        const { deviceId, type, macAddress } = req.body;
+        const { id, type, macAddress } = req.body;
 
         // Validar tipo de dispositivo
         if (!['chapa', 'luz'].includes(type)) {
@@ -84,7 +84,7 @@ app.post('/register-device', async (req, res) => {
 
         // Registrar o actualizar dispositivo
         const [device, created] = await Device.findOrCreate({
-            where: { deviceId },
+            where: { id },
             defaults: {
                 type,
                 macAddress,
@@ -106,27 +106,47 @@ app.post('/register-device', async (req, res) => {
 
 // Controlar Dispositivo con Validación de Inmueble
 app.post('/inmuebles/:inmuebleId/control-dispositivo', async (req, res) => {
-    const { deviceId, action } = req.body;
+    try {
+        // Verificar si el dispositivo pertenece al inmueble
+        const relacion = await InmuebleDevice.findOne({
+            where: { inmuebleId: req.params.inmuebleId, deviceId: deviceId }
+        });
 
-    // Verificar si el dispositivo pertenece al inmueble
-    const relacion = await InmuebleDevice.findOne({
-        where: { inmuebleId: req.params.inmuebleId, deviceId: deviceId }
-    });
+        if (!relacion) {
+            return res.status(403).json({ error: 'Dispositivo no asignado a este inmueble' });
+        }
 
-    if (!relacion) {
-        return res.status(403).json({ error: 'Dispositivo no asignado a este inmueble' });
+        // Obtener el dispositivo para verificar su tipo
+        const device = await Device.findByPk(deviceId);
+        if (!device) {
+            return res.status(404).json({ error: 'Dispositivo no encontrado' });
+        }
+
+        // Determinar el estado según el tipo de dispositivo y la acción
+        let nuevoEstado;
+        if (device.type === 'chapa') {
+            nuevoEstado = action === 'activar' ? 'abierta' : 'cerrada';
+        } else if (device.type === 'luz') {
+            nuevoEstado = action === 'activar' ? 'encendida' : 'apagada';
+        } else {
+            return res.status(400).json({ error: 'Tipo de dispositivo no válido' });
+        }
+
+        // Actualizar el estado en la tabla de relación
+        await relacion.update({
+            status: nuevoEstado,
+            lastUpdated: new Date()
+        });
+
+        // Emitir por WebSocket
+        io.emit('device-control', { deviceId, action, nuevoEstado });
+
+        res.json({ success: true, status: nuevoEstado });
+    } catch (error) {
+        console.error('Error al controlar dispositivo:', error);
+        res.status(500).json({ error: 'Error al controlar dispositivo' });
     }
 
-    // Actualizar el estado en la tabla de relación
-    await relacion.update({
-        status: action === 'activar' ? 'activo' : 'inactivo',
-        lastUpdated: new Date()
-    });
-
-    // Emitir por WebSocket
-    io.emit('device-control', { deviceId, action });
-
-    res.json({ success: true });
 });
 
 

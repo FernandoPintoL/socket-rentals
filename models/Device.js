@@ -2,9 +2,10 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
 const Device = sequelize.define('devices', {
-    deviceId: {
-        type: DataTypes.STRING,
-        primaryKey: true
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
     },
     type: {
         type: DataTypes.STRING, // 'chapa' o 'luz'
@@ -24,7 +25,8 @@ const Device = sequelize.define('devices', {
 }, {
     tableName: 'devices',
     timestamps: true,
-    underscored: true
+    underscored: true,
+    freezeTableName: true, // Evita que Sequelize pluralice el nombre de la tabla
 });
 
 module.exports = Device;
