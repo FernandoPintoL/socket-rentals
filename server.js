@@ -17,6 +17,9 @@ const rateLimit = require('express-rate-limit');
 const PORT = process.env.PORT || 4000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
+const APP_ENV = process.env.APP_ENV || 'local';
+const APP_URL_LOCAL = process.env.APP_URL_LOCAL || 'http://localhost:4000';
+const APP_URL_PROD = process.env.APP_URL_PROD || 'https://web-production-5f93.up.railway.app/';
 
 // Connect to MongoDB
 connectDB();
@@ -268,5 +271,6 @@ io.on('connection', (socket) => {
 
 // Iniciar servidor
 server.listen(PORT, () => {
-    console.log(`Servidor de control IoT en http://localhost:${PORT}`);
+    const appUrl = APP_ENV === 'production' ? APP_URL_PROD : APP_URL_LOCAL;
+    console.log(`Servidor de control IoT en ${appUrl}`);
 });
